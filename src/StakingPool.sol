@@ -48,10 +48,11 @@ contract StakingPool is Ownable{
 
    
 
-    modifier NotOwner(){
-       require(msg.sender != owner(), "Oppps Not Here!!");
-       _;
-    }
+  
+    modifier NotOwner() {
+        require(msg.sender != owner(), "Owner cannot stake");
+        _;
+   }
 
     // events
 
@@ -125,26 +126,25 @@ contract StakingPool is Ownable{
 }
 
     // unstaking
-
     function unstakeFromPool()external NotOwner{
        require(stakes[msg.sender].amount > 0, "You do not have a stake");
        require(stakingPools[stakes[msg.sender].stakedPoolID].poolExpiration < block.timestamp, "Pool is yet to expire, you can't cash out");
        
-    
         StakPool memory pool = stakingPools[stakes[msg.sender].stakedPoolID];
-        uint stakingDuration = block.timestamp - stakes[msg.sender].amount;
-        uint reward = (stakes[msg.sender].amount * stakingPools[stakes[msg.sender].stakedPoolID].rewardPercentage * stakingDuration) / (100 * 365 days);
+         uint256 stakedAmount = stakes[msg.sender].amount;
+       uint256 stakingDuration = block.timestamp - stakes[msg.sender].timeStamp;
+
+        uint reward = (stakedAmount * pool.rewardPercentage * stakingDuration) / (100 * 365 days);
         
         ERC20 token = ERC20(stakes[msg.sender].token);
-
-        require( token.balanceOf(address(this)) >= reward, "OOPSS!! We are broke at the moment");
+       
+       uint256 totalPayout=stakedAmount + reward;
+        require( token.balanceOf(address(this)) >= totalPayout, "OOPSS!! We are broke at the moment");
         token.transfer(msg.sender, reward); 
 
          stakes[msg.sender].amount=0;
-         pool.totalAmount-= reward;
+         pool.totalAmount-= stakedAmount;
 
          emit Unstacked();
     }
-
-    
 }
